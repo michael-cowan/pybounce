@@ -649,9 +649,12 @@ def train_nn(epochs=100, node_arch='64-64', play=False):
                  DEFAULT: False
     """
     x, y = read_in_data()
+    y[y == 0] = 0.05
+    y[y == 1] = 0.9
+
     model = build_nn(node_arch=node_arch)
     history = model.fit(x, y, validation_split=0.2, epochs=epochs,
-                        batch_size=20)
+                        batch_size=32)
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
 
