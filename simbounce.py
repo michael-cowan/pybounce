@@ -608,25 +608,22 @@ def build_nn(node_arch='64-64', weights_path=None):
     print('Building NN...')
     nn = Sequential()
 
-    # default architecture = 64-64-3 nodes
-    if node_arch is None:
-        node_arch = '64-64'
-
     # convert node architecture string to list of num_nodes
     nodes = list(map(int, node_arch.split('-')))
 
-    # add first layer with specific input_shape
-    nn.add(Dense(nodes.pop(0), input_shape=(28, ), activation='relu'))
+    # add input layer
+    nn.add(Input(shape=(28, )))
 
-    # add in remaining Dense layers
+    # add hidden Dense layers
     for node in nodes:
         nn.add(Dense(node, activation='relu'))
 
-    # add in output layer
+    # add output layer (include dropout)
+    nn.add(Dropout(0.2))
     nn.add(Dense(3, activation='softmax'))
 
     # compile model
-    nn.compile('adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    nn.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
     # read in weights if a path is given and the file exists
     if weights_path is not None and os.path.isfile(weights_path):
@@ -662,8 +659,15 @@ def train_nn(epochs=100, node_arch='64-64', play=False):
     if not os.path.isdir(res_path):
         os.mkdir(res_path)
 
-    # get number of nodes in each layer
-    units = '-'.join(map(lambda z: str(z.units), model.layers))
+    # get number of nodes / dropout rates in each layer
+    units = []
+    for layer in model.layers:
+        if 'dropout' in layer.name:
+            units.append(str(layer.rate))
+        else:
+            units.append(str(layer.units))
+
+    units = '-'.join(units)
 
     # save trained model (includes architecture and weights)
     model.save(os.path.join(res_path, 'model_%s.h5' % units))
