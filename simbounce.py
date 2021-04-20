@@ -3,21 +3,25 @@ import sys
 import random
 import time
 from datetime import datetime
+
 import numpy as np
+import matplotlib.pyplot as plt
+
 import pygame
 import pygame.gfxdraw
 import pygame.locals as loc
 from pygame.colordict import THECOLORS
+
 import pymunk
 import pymunk.pygame_util
 from pymunk import Vec2d
-import matplotlib.pyplot as plt
-from keras.models import load_model
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold
+
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Dense, Dropout
+from tensorflow.keras.optimizers import Adam
+
 
 
 def fitness_test(score, fitness):
