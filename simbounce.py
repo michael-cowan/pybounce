@@ -37,6 +37,9 @@ def fitness_test(score, fitness):
     return fig, axes
 
 
+# match pymunk coordinates to pygame (positive = up/right)
+pymunk.pygame_util.positive_y_is_up = True
+
 # pygame directory
 DIRPATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -209,11 +212,10 @@ class BouncePhysics(object):
         nn (keras.Model): neural network to make prediction
         """
         features = self.get_features()
-        res = nn.predict(features)
-        print(res.astype(float))
+        res = nn(features, training=False)[0]
 
         # max output in NN determines input for game
-        inp = np.where(res == res.max())[1][0] - 1
+        inp = int(tf.math.argmax(res)) - 1
 
         return inp
 
@@ -243,7 +245,7 @@ class BouncePhysics(object):
 
         # clear self.obstacles
         for o in self.obstacles:
-            self.space.remove(o)
+            self.space.remove(*o)
         self.obstacles = []
 
         # move ball to center and remove velocity
@@ -306,7 +308,7 @@ class BouncePhysics(object):
                        WIN_SIZE[0] - (WIN_SIZE[0] / 10)]
         for r in remove_obst:
             self.obstacles.remove(r)
-            self.space.remove(r)
+            self.space.remove(*r)
         self._count += 1
 
     def update_score(self):
@@ -693,8 +695,8 @@ def plot_training(epochs=100, node_arch=None, play=False):
 
     # plot/save train and test accuracy
     fig, ax = plt.subplots()
-    ax.plot(history.history['acc'], label='Train')
-    ax.plot(history.history['val_acc'], label='Test')
+    ax.plot(history.history['accuracy'], label='Train')
+    ax.plot(history.history['val_accuracy'], label='Validation')
     ax.set_title('Model Accuracy (%s)' % units)
     ax.set_ylabel('Accuracy')
     ax.set_xlabel('Epoch')
@@ -704,7 +706,7 @@ def plot_training(epochs=100, node_arch=None, play=False):
     # plot/save train and test loss
     fig2, ax2 = plt.subplots()
     ax2.plot(history.history['loss'], label='Train')
-    ax2.plot(history.history['val_loss'], label='Test')
+    ax2.plot(history.history['val_loss'], label='Validation')
     ax2.set_title('Model Loss (%s)' % units)
     ax2.set_ylabel('Loss')
     ax2.set_xlabel('Epoch')
