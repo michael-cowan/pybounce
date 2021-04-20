@@ -594,7 +594,7 @@ def read_in_data(shuffle=True):
     return x, y
 
 
-def build_nn(node_arch=None, weights_path=None):
+def build_nn(node_arch='64-64', weights_path=None):
     """
     Builds a keras Sequential NN model for pybounce
 
@@ -636,30 +636,9 @@ def build_nn(node_arch=None, weights_path=None):
     return nn
 
 
-def train_nn(weights_path=NNPATH):
-    print('Reading in data...')
-    x, y = read_in_data()
-
-    # create the NN classifier
-    classifier = KerasClassifier(build_fn=build_nn, epochs=14, batch_size=16)
-
-    # run k-fold cross validation
-    kfold = KFold(10, shuffle=True)
-    res = cross_val_score(classifier, x, y, cv=kfold)
-    print(res)
-    classifier.model.save_weights(weights_path)
-
-    # if train:
-    #     print('Training NN...')
-    #     nn.fit(x, y, epochs=200, batch_size=10)
-    #     nn.save_weights(weights_path)
-
-    return classifier
-
-
-def plot_training(epochs=100, node_arch=None, play=False):
+def train_nn(epochs=100, node_arch='64-64', play=False):
     """
-    Builds model, trains with 80-20 train-test split, plots learning curve,
+    Builds model, trains with 80-20 train-validation split, plots learning curve,
     saves model and plots, runs PyBounce with trained model bot (optional)
 
     KArgs:
@@ -732,7 +711,7 @@ def load_last_model():
 if __name__ == "__main__":
     # CURRENT BEST ARCHITECTURE: 256-256-256-256-3
     # node_arch = '-'.join(['256'] * 4)
-    # plot_training(epochs=200, node_arch=node_arch, play=False)
+    # train_nn(epochs=200, node_arch=node_arch, play=False)
 
     nn = load_last_model()
     PyBounce().run(nn=nn)
