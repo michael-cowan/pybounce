@@ -34,6 +34,9 @@ TRAINPATH = os.path.join(DIRPATH, 'training_results')
 # data directory - stores user tracking data
 DATAPATH = os.path.join(DIRPATH, 'data')
 
+# assets directory
+ASSETSPATH = os.path.join(DIRPATH, 'assets')
+
 # Opens game in the center of the self.screen
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
@@ -361,7 +364,7 @@ class PyBounce(BouncePhysics):
 
         # Caption & icon
         pygame.display.set_caption("PyBounce")
-        iconpath = pygame.image.load(os.path.join(DIRPATH, 'icon.png'))
+        iconpath = pygame.image.load(os.path.join(ASSETSPATH, 'icon.png'))
         pygame.display.set_icon(iconpath)
 
         # Hide mouse
