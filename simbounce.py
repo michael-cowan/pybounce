@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import json
 import time
 from datetime import datetime
 
@@ -30,14 +31,8 @@ DIRPATH = os.path.dirname(os.path.abspath(__file__))
 # training directory
 TRAINPATH = os.path.join(DIRPATH, 'training_results')
 
-# path to tracking data
-MJCDATA = os.path.join(DIRPATH, 'MJC-DATA.txt')
-
-# path to save neural network weights
-NNPATH = os.path.join(DIRPATH, 'nn-weights.hdf')
-
-if not os.path.isfile(MJCDATA):
-    open(MJCDATA, 'w').close()
+# data directory - stores user tracking data
+DATAPATH = os.path.join(DIRPATH, 'data')
 
 # Opens game in the center of the self.screen
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -319,11 +314,34 @@ class BouncePhysics(object):
 
 
 class PyBounce(BouncePhysics):
-    def __init__(self):
+    """
+    Complete PyBounce game (UI + BouncePhysics)
+    - Can also record user data for subsequent NN model training
+    """
+    def __init__(self, user='MJC', collect_data=True):
         # initialize physics
         super().__init__()
 
+        # define the user
+        self.user = user.upper()
+
+        # whether or not to collect data
+        self.collect_data = collect_data
+
+        # define the user data tracking file
+        self.data_path = os.path.join(DATAPATH, f'{self.user}-DATA.txt')
+
+        # read in the highscores
+        self.highscore_path = os.path.join(DIRPATH, 'hs.json')
+        with open(self.highscore_path, 'r') as fidr:
+            self.all_highscores = json.load(fidr)
+
+        # get the user's highscore
         self.highscore = 0
+        if self.user in self.all_highscores:
+            self.highscore = self.all_highscores[self.user]
+
+        # initialize game params
         self.startscreen = True
         self.firstplay = True
 
@@ -331,7 +349,7 @@ class PyBounce(BouncePhysics):
         self.nn = None
 
         # data collection attributes
-        self.data_collected = 0
+        self.data = []
 
         # Main self.screen
         pygame.init()
@@ -361,14 +379,23 @@ class PyBounce(BouncePhysics):
         text.append("SCORE: {}".format(str(self.score)))
         if self.score > self.highscore:
             text.append("NEW HIGHSCORE!")
+            # write highscore to hs.json
+            # NOTE: BouncePhysics will set self.highscore = self.score
+            # so no need to do it here (just use self.score)
+            self.all_highscores[self.user] = self.score
+            with open(self.highscore_path, 'w') as fidw:
+                json.dump(self.all_highscores, fidw, indent=2)
+
         text.append("(SPACE TO RESTART)")
         self.draw_textbox(text)
 
         # reset data collected and delete last <n> lines from tracked data
-        if self.nn is None:
-            print(self.data_collected)
-            self.delete_data(min(self.data_collected, 50))
-            self.data_collected = 0
+        if self.nn is None and self.collect_data:
+            # drop the last 50 data points collected
+            # (assumes this is where it all went wrong!)
+            self.data = self.data[:-50]
+            print(len(self.data))
+            self.write_data()
 
         self.gameover = True
         pygame.display.flip()
@@ -498,17 +525,16 @@ class PyBounce(BouncePhysics):
                         # -1: move left
                         inp = -1
 
-                    # don't save the first <n> steps
-                    if delay == 30:
-                        # only take 25% of "no input" moves for now to
-                        # balance out dataset
-                        if inp != 0 or random.random() < 0.25:
-                            feature_ls = list(self.get_features()[0]) + [inp]
-                            data = ', '.join(list(map(str, feature_ls)))
-                            self.write_data(data)
-                            self.data_collected += 1
-                    else:
-                        delay += 1
+                    if self.collect_data:
+                        # don't save the first <n> steps
+                        if delay == 30:
+                            # only take 25% of "no input" moves for now to
+                            # balance out dataset
+                            if inp != 0 or random.random() < 0.25:
+                                feature_ls = list(self.get_features()[0]) + [inp]
+                                self.data.append(feature_ls)
+                        else:
+                            delay += 1
 
                 # update ball based on input
                 self.update_ball(inp)
@@ -554,27 +580,24 @@ class PyBounce(BouncePhysics):
         pygame.quit()
         sys.exit()
 
-    def write_data(self, data):
-        with open(MJCDATA, 'a') as fidw:
-            fidw.write(data + '\n')
-
-    def delete_data(self, num_lines):
-        with open(MJCDATA, 'r') as fidr:
-            lines = fidr.readlines()
-        with open(MJCDATA, 'w') as fidw:
-            fidw.writelines(lines[:-num_lines])
-
+    def write_data(self):
+        with open(self.data_path, 'a+') as fidw:
+            for d in self.data:
+                data_str = ', '.join(list(map(str, d)))
+                fidw.write(data_str + '\n')
 
 """
 Neural Network Bot Functions
 """
 
 
-def read_in_data(shuffle=True):
+def read_in_data(user='MJC', shuffle=True):
     """
     Reads in data from me playing PyBounce
 
     KArgs:
+    user (str): the player's username
+                (Default: MJC)
     shuffle (bool): if True, randomize order of data
                     DEFAULT: True
 
@@ -582,7 +605,8 @@ def read_in_data(shuffle=True):
     x: (n x 29) matrix
     y: (n x 3) one-hot-encoded outputs
     """
-    data = np.loadtxt(MJCDATA, delimiter=',')
+    user_data_path = os.path.join(DATAPATH, f'{user}-DATA.txt')
+    data = np.loadtxt(user_data_path, delimiter=',')
     if shuffle:
         np.random.shuffle(data)
     x = data[:, :-1]
