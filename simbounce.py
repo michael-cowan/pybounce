@@ -20,22 +20,6 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Dense, Dropout
-from tensorflow.keras.optimizers import Adam
-
-
-
-def fitness_test(score, fitness):
-    fig, axes = plt.subplots(1, 2)
-    a1, a2 = axes
-    a1.scatter(score, fitness)
-    a1.set_xlabel('Score')
-    a1.set_ylabel('Fitiness')
-    a2.scatter(score, fitness / fitness.sum())
-    a2.set_xlabel('Score')
-    a2.set_ylabel('$\\rm p_i$')
-    plt.show()
-    return fig, axes
-
 
 # match pymunk coordinates to pygame (positive = up/right)
 pymunk.pygame_util.positive_y_is_up = True
@@ -82,6 +66,11 @@ WIN_SIZE = (WIDTH, int(WIDTH / IPHONE_RATIO))
 
 
 class BouncePhysics(object):
+    """
+    Controls all physics of PyBounce, but none of the UI drawing/updating
+    - BouncePhysics can be used without a pygame UI, enabling future optimizations
+      with Genetic Algorithms or Reinforcement Learning
+    """
     def __init__(self):
         self.score = 0
         self.highscore = 0
@@ -158,6 +147,10 @@ class BouncePhysics(object):
         self.gameover = True
 
     def define_collisions(self):
+        """
+        Gameover if player hits an obstacle
+        +1 point every time player bounces off ground or right wall
+        """
         # Function to run when player collides with an obstacle
         h0 = self.space.add_collision_handler(collision_types['player'],
                                               collision_types['obstacle'])
@@ -312,6 +305,11 @@ class BouncePhysics(object):
         self._count += 1
 
     def update_score(self):
+        """
+        Scoring rules for passing obstacles:
+        +2 points for passing over a ground obstacle
+        +3 points for passing under a ceiling obstacle
+        """
         # Player earns points for every obstacle moved past
         for o in self.obstacles:
             if o[1].color != THECOLORS["skyblue"]:
@@ -721,4 +719,4 @@ if __name__ == "__main__":
     # train_nn(epochs=200, node_arch=node_arch, play=False)
 
     nn = load_last_model()
-    PyBounce().run(nn=nn)
+    PyBounce().run(nn=None)
