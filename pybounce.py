@@ -360,9 +360,9 @@ class PyBounce(BouncePhysics):
         self.background = THECOLORS["white"]
 
         # Caption & icon
-        pygame.display.set_caption("pybounce")
-        # icon = pygame.image.load('PATH2ICON')
-        # pygame.display.set_icon(iconpath)
+        pygame.display.set_caption("PyBounce")
+        iconpath = pygame.image.load(os.path.join(DIRPATH, 'icon.png'))
+        pygame.display.set_icon(iconpath)
 
         # Hide mouse
         pygame.mouse.set_visible(False)
