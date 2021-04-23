@@ -743,4 +743,4 @@ if __name__ == "__main__":
     # train_nn(epochs=200, node_arch=node_arch, play=False)
 
     nn = load_last_model()
-    PyBounce().run(nn=None)
+    PyBounce().run(nn=nn)
