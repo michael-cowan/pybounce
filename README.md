@@ -1,3 +1,5 @@
+![PyBounceLogo](assets/pybounce_logo.png)
+
 # PyBounce
 
 A simple 2D arcade-style game that includes machine learning tools to train a deep neural network bot.
